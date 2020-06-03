@@ -2,7 +2,7 @@ import { gql } from 'apollo-server';
 
 export const typeDefs = gql(`
     type Query {
-        getProduct(id: ID!): Product
+        getProduct(id: ID!): Product @cacheControl(maxAge: 240)
         getProducts: [Product]
     }
 

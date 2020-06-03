@@ -3,6 +3,7 @@ import { Attribute, Product, ProductModel } from '../models';
 import { DataSource, DataSourceConfig } from 'apollo-datasource';
 import { KeyValueCache } from 'apollo-server-caching';
 import { ObjectID } from 'mongodb';
+import _ from 'lodash';
 
 
 export default class ProductProvider extends DataSource implements Provider {
@@ -21,7 +22,9 @@ export default class ProductProvider extends DataSource implements Provider {
         try {
             product.id = new ObjectID().toHexString();
             const newProduct = await ProductModel.create(product);
-            this.cache.set(`product:${product.id}`, JSON.stringify(newProduct), { ttl: 60 });
+            if (!_.isEmpty(newProduct)) {
+                this.cache.set(`product:${product.id}`, JSON.stringify(newProduct), { ttl: 60 });
+            }
             return newProduct;
         } catch (err) {
             throw new Error(err);
@@ -36,7 +39,9 @@ export default class ProductProvider extends DataSource implements Provider {
                     { attributes },
                     { new: true }
                 ).exec();
-                this.cache.set(`product:${product.id}`, JSON.stringify(product), { ttl: 60 });
+                if (!_.isEmpty(product)) {
+                    this.cache.set(`product:${product.id}`, JSON.stringify(product), { ttl: 60 });
+                }
                 return product;
             }
             return null;
@@ -52,7 +57,9 @@ export default class ProductProvider extends DataSource implements Provider {
                 return JSON.parse(cachedProduct);
             } else {
                 const product = await ProductModel.findOne({ id }).exec();
-                this.cache.set(`product:${id}`, JSON.stringify(product), { ttl: 60 });
+                if (!_.isEmpty(product)) {
+                    this.cache.set(`product:${id}`, JSON.stringify(product), { ttl: 60 });
+                }
                 return product;
             }
         } catch (err) {
@@ -67,7 +74,9 @@ export default class ProductProvider extends DataSource implements Provider {
                 return JSON.parse(cachedProducts);
             } else {
                 const products = await ProductModel.find().exec();
-                this.cache.set(`product:all`, JSON.stringify(products), { ttl: 60 });
+                if (!_.isEmpty(products)) {
+                    this.cache.set(`product:all`, JSON.stringify(products), { ttl: 60 });
+                }
                 return products;
             }
         } catch (err) {

@@ -28,6 +28,7 @@ describe('product query', () => {
         const GET_PRODUCT = gql(`
             query product($id: ID!){
                 getProduct(id: $id) {
+                    id
                     title
                     price {
                         bestPrice
@@ -60,6 +61,7 @@ describe('product query', () => {
                     },
                 });
                 expect(response.data.getProduct).toEqual({
+                    id: idProduct,
                     title: 'Xablau',
                     price: {
                         bestPrice: null,
@@ -74,6 +76,10 @@ describe('product query', () => {
             beforeEach(async () => {
                 sinon.stub(ProductModel, 'findOne').throwsException('fake exception');
                 await redis.flush();
+            });
+
+            afterEach(() => {
+                sinon.restore();
             });
 
             it('should return an error message', async () => {
@@ -110,6 +116,25 @@ describe('product query', () => {
                     id: 'magalu',
                     title: 'luizalabs'
                 });
+            });
+        });
+
+        describe('and product is not found', () => {
+
+            beforeEach(async () => {
+                await redis.flush();
+                await ProductModel.deleteMany({}).exec();
+            });
+
+            it('should not cache product', async () => {
+                const response = await query({
+                    query: GET_PRODUCT,
+                    variables: {
+                        id: 'notfound',
+                    },
+                });
+                expect(response.data.getProduct).toBeNull();
+                expect(await redis.get('product:notfound')).toBeUndefined();
             });
         });
     });
@@ -156,6 +181,10 @@ describe('product query', () => {
                 await redis.flush();
             });
 
+            afterEach(() => {
+                sinon.restore();
+            });
+
             it('should return an error message', async () => {
                 const response = await query({
                     query: GET_PRODUCTS,
@@ -187,6 +216,22 @@ describe('product query', () => {
             it('should return cached products', async () => {
                 const products: Product[] = await provider.getAll();
                 expect(products.map((p) => (p.id))).toEqual(['p1', 'p2']);
+            });
+        });
+
+        describe('and products is empty', () => {
+            beforeEach(async () => {
+                await ProductModel.deleteMany({}).exec();
+                await redis.flush();
+            });
+
+            it('should not cache all products', async () => {
+                const response = await query({
+                    query: GET_PRODUCTS,
+                    variables: {},
+                });
+                expect(response.data.getProducts).toEqual([]);
+                expect(await redis.get('product:all')).toBeUndefined();
             });
         });
     });
@@ -238,6 +283,10 @@ describe('product query', () => {
                 sinon.stub(ProductModel, 'create').throwsException('fake exception');
             });
 
+            afterEach(() => {
+                sinon.restore();
+            });
+
             it('should return an error message', async () => {
                 const response = await query({
                     query: CREATE_PRODUCT,
@@ -252,6 +301,34 @@ describe('product query', () => {
                     },
                 });
                 expect(response.errors[0].message).toEqual('fake exception');
+            });
+        });
+
+        describe('and product is not created', () => {
+
+            beforeEach(() => {
+                sinon.stub(ProductModel, 'create').returns(null);
+            });
+
+            afterEach(() => {
+                sinon.restore();
+            });
+
+            it('should not cache product', async () => {
+                const response = await query({
+                    query: CREATE_PRODUCT,
+                    variables: {
+                        product: {
+                            title: 'xpto',
+                            price: {
+                                listPrice: 200.00,
+                                bestPrice: 100.00
+                            },
+                        },
+                    },
+                });
+                expect(response.data.createProduct).toEqual(null);
+                expect(await redis.get('product:*')).toBeUndefined();
             });
         });
     });
@@ -389,6 +466,31 @@ describe('product query', () => {
                     },
                 });
                 expect(response.errors[0].message).toEqual('fake exception');
+            });
+        });
+
+        describe('and product is not found', () => {
+
+            beforeEach(async () => {
+                await redis.flush();
+                await ProductModel.deleteMany({}).exec();
+            });
+
+            it('should not cache product', async () => {
+                const response = await query({
+                    query: UPDATE_PRODUCT,
+                    variables: {
+                        id: idProduct,
+                        attributes: [
+                            {
+                                slug: 'att',
+                                values: ['1', '2']
+                            }
+                        ],
+                    },
+                });
+                expect(response.data.updateProductAttributes).toBeNull();
+                expect(await redis.get(`product:${idProduct}`)).toBeUndefined();
             });
         });
     });
