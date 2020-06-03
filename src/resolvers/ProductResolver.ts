@@ -1,4 +1,5 @@
-import { Product, ProductModel } from '../models';
+import { Product } from '../models';
+import { IProvider } from '../providers';
 
 export default {
     Mutation: {
@@ -8,12 +9,9 @@ export default {
             context: any,
             info: any
         ): Promise<Product> => {
-            try {
-                const { product } = args;
-                return ProductModel.create(product);
-            } catch (err) {
-                throw new Error(err);
-            }
+            const { product } = args;
+            const { productProvider }: { productProvider: IProvider } = context.dataSources;
+            return productProvider.create(product);
         },
         updateProductAttributes: async (
             parent: any,
@@ -21,28 +19,20 @@ export default {
             context: any,
             info: any
         ): Promise<Product> => {
-            try {
-                const { id, attributes = [] } = args;
-                if (id && attributes) {
-                    return ProductModel.findByIdAndUpdate(
-                        { _id: id },
-                        { attributes },
-                        { new: true }
-                    ).exec();
-                }
-                return null;
-            } catch (err) {
-                throw new Error(err);
-            }
+            const { id, attributes = [] } = args;
+            const { productProvider }: { productProvider: IProvider } = context.dataSources;
+            return productProvider.update(id, attributes);
         }
     },
     Query: {
-        getProducts: async (): Promise<Product[]> => {
-            try {
-                return ProductModel.find().exec();
-            } catch (err) {
-                throw new Error(err);
-            }
+        getProducts: async (
+            parent: any,
+            args: any,
+            context: any,
+            info: any
+        ): Promise<Product[]> => {
+            const { productProvider }: { productProvider: IProvider } = context.dataSources;
+            return productProvider.getAll();
         },
         getProduct: async (
             parent: any,
@@ -50,12 +40,9 @@ export default {
             context: any,
             info: any
         ): Promise<Product> => {
-            try {
-                const {id} = args;
-                return ProductModel.findOne({ _id: id }).exec();
-            } catch (err) {
-                throw new Error(err);
-            }
+            const { id } = args;
+            const { productProvider }: { productProvider: IProvider } = context.dataSources;
+            return productProvider.get(id);
         },
     },
 };

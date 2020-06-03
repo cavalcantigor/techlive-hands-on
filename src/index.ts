@@ -2,9 +2,10 @@ import { ApolloServer } from 'apollo-server-express';
 import config from 'config';
 import express from 'express';
 import mongoose from 'mongoose';
+import logger from './commons/Logger';
+import dataSources from './datasources';
 import resolvers from './resolvers';
 import { typeDefs } from './schema';
-import logger from './commons/Logger';
 
 // tslint:disable-next-line: no-unused-expression
 (() => {
@@ -13,6 +14,7 @@ import logger from './commons/Logger';
         const server = new ApolloServer({
             typeDefs,
             resolvers,
+            dataSources,
             playground: true,
             introspection: true
         });

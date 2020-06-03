@@ -1,15 +1,17 @@
 import { ApolloServer } from 'apollo-server-express';
 import { createTestClient } from 'apollo-server-testing';
-import resolvers from '../../src/resolvers';
-import { typeDefs } from '../../src/schema';
 import config from 'config';
 import mongoose from 'mongoose';
+import dataSources from '../../src/datasources';
 import logger from '../../src/commons/Logger';
+import resolvers from '../../src/resolvers';
+import { typeDefs } from '../../src/schema';
 
 
 export const server = new ApolloServer({
   typeDefs,
   resolvers,
+  dataSources,
   playground: false,
   introspection: false
 });
