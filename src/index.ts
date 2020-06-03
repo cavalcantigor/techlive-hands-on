@@ -1,3 +1,4 @@
+import { RedisCache } from 'apollo-server-cache-redis';
 import { ApolloServer } from 'apollo-server-express';
 import config from 'config';
 import express from 'express';
@@ -14,6 +15,7 @@ import { typeDefs } from './schema';
         const server = new ApolloServer({
             typeDefs,
             resolvers,
+            cache: new RedisCache(),
             dataSources,
             playground: true,
             introspection: true

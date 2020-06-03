@@ -2,7 +2,7 @@ import { Attribute, Price } from './index';
 import { arrayProp, prop, getModelForClass } from '@typegoose/typegoose';
 
 export class Product {
-
+    @prop({ required: true })
     public id?: string;
 
     @prop({ required: true })
@@ -15,4 +15,6 @@ export class Product {
     public attributes?: Attribute[];
 }
 
-export default getModelForClass(Product);
+export default getModelForClass(Product, {
+    schemaOptions: { id: false }
+});

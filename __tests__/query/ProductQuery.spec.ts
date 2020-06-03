@@ -2,7 +2,11 @@ import { gql } from 'apollo-server';
 import sinon from 'sinon';
 import { query, server, connectMongo, disconnectMongo } from '../helper/QueryUtil';
 import { Product, ProductModel } from '../../src/models';
+import { RedisCache } from 'apollo-server-cache-redis';
+import { ObjectID } from 'mongodb';
+import { ProductProvider } from '../../src/providers';
 
+const redis = new RedisCache();
 
 beforeAll(async () => {
     await connectMongo();
@@ -12,6 +16,11 @@ afterAll(async (done) => {
     await disconnectMongo();
     await server.stop();
     done();
+});
+
+beforeEach(async () => {
+    await redis.flush();
+    await ProductModel.deleteMany({}).exec();
 });
 
 describe('product query', () => {
@@ -30,7 +39,10 @@ describe('product query', () => {
 
         let idProduct: string;
         beforeEach(async () => {
-            const product: Product = { title: 'Xablau', price: { listPrice: 99.9 } };
+            const product: Product = {
+                id: new ObjectID(123).toHexString(),
+                title: 'Xablau', price: { listPrice: 99.9 }
+            };
             const pm = await new ProductModel(product).save();
             idProduct = pm.id;
         });
@@ -59,8 +71,9 @@ describe('product query', () => {
 
         describe('and fails', () => {
 
-            beforeEach(() => {
+            beforeEach(async () => {
                 sinon.stub(ProductModel, 'findOne').throwsException('fake exception');
+                await redis.flush();
             });
 
             it('should return an error message', async () => {
@@ -71,6 +84,32 @@ describe('product query', () => {
                     },
                 });
                 expect(response.errors[0].message).toEqual('fake exception');
+            });
+        });
+
+        describe('and has cached product', () => {
+
+            const provider = new ProductProvider();
+            beforeEach(async () => {
+                await redis.flush();
+                await redis.set(
+                    'product:p1',
+                    JSON.stringify({ id: 'magalu', title: 'luizalabs' }),
+                    { ttl: 5 }
+                );
+                provider.initialize({ cache: redis, context: null });
+            });
+
+            afterEach(async () => {
+                await redis.flush();
+            });
+
+            it('should return cached products', async () => {
+                const product: Product = await provider.get('p1');
+                expect(product).toEqual({
+                    id: 'magalu',
+                    title: 'luizalabs'
+                });
             });
         });
     });
@@ -89,13 +128,14 @@ describe('product query', () => {
         `);
 
         beforeEach(async () => {
-            const product1: Product = { title: 'Xablau', price: { listPrice: 99.9 } };
-            const product2: Product = { title: 'DarthV', price: { listPrice: 1000 } };
+            const product1: Product = { id: 'produto1', title: 'Xablau', price: { listPrice: 99.9 } };
+            const product2: Product = { id: 'produto2', title: 'DarthV', price: { listPrice: 1000 } };
             await ProductModel.insertMany([product1, product2]);
         });
 
         afterEach(async () => {
             await ProductModel.deleteMany({}).exec();
+            await redis.flush();
         });
 
         describe('and succeeds', () => {
@@ -111,8 +151,9 @@ describe('product query', () => {
 
         describe('and fails', () => {
 
-            beforeEach(() => {
+            beforeEach(async () => {
                 sinon.stub(ProductModel, 'find').throwsException('fake exception');
+                await redis.flush();
             });
 
             it('should return an error message', async () => {
@@ -121,6 +162,31 @@ describe('product query', () => {
                     variables: {},
                 });
                 expect(response.errors[0].message).toEqual('fake exception');
+            });
+        });
+
+        describe('and has cached products', () => {
+
+            const provider = new ProductProvider();
+            beforeEach(async () => {
+                await redis.flush();
+                await redis.set('product:all',
+                    JSON.stringify([
+                        { id: 'p1', title: 'Xablau', price: { listPrice: 99.9 } },
+                        { id: 'p2', title: 'DarthV', price: { listPrice: 1000 } }
+                    ]),
+                    { ttl: 5 }
+                );
+                provider.initialize({ cache: redis, context: null });
+            });
+
+            afterEach(async () => {
+                await redis.flush();
+            });
+
+            it('should return cached products', async () => {
+                const products: Product[] = await provider.getAll();
+                expect(products.map((p) => (p.id))).toEqual(['p1', 'p2']);
             });
         });
     });
@@ -225,13 +291,18 @@ describe('product query', () => {
 
         let idProduct: string;
         beforeEach(async () => {
-            const product: Product = { title: 'Xurumelas', price: { listPrice: 999.99 } };
+            const product: Product = {
+                id: new ObjectID(456).toHexString(),
+                title: 'Xurumelas',
+                price: { listPrice: 999.99 }
+            };
             const pm = await new ProductModel(product).save();
             idProduct = pm.id;
         });
 
         afterEach(async () => {
             await ProductModel.deleteMany({}).exec();
+            await redis.flush();
             sinon.restore();
         });
 
@@ -297,7 +368,7 @@ describe('product query', () => {
         describe('and fails', () => {
 
             beforeEach(() => {
-                sinon.stub(ProductModel, 'findByIdAndUpdate').throwsException('fake exception');
+                sinon.stub(ProductModel, 'findOneAndUpdate').throwsException('fake exception');
             });
 
             afterEach(() => {
