@@ -36,7 +36,7 @@ export default class ProductProvider extends MongoDataSource<Product> implements
     public async get(id: string): Promise<Product> {
         try {
             const objID = new ObjectID(id);
-            const product = await this.findOneById(objID);
+            const product = await this.findOneById(objID, { ttl: 60 });
             return Object.assign({}, product, { id });
         } catch (err) {
             throw err;
