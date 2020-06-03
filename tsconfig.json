@@ -9,12 +9,14 @@
         "outDir": "dist",
         "baseUrl": ".",
         "experimentalDecorators": true,
+        "emitDecoratorMetadata": true,
         "paths": {
             "*": [
                 "src/models/*"
             ]
         },
         "types": [
+            "jest",
             "node",
         ],
         "plugins": [

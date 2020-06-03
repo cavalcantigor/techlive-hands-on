@@ -1,0 +1,3 @@
+mongodb:
+  host: localhost:27017
+  database: graphql

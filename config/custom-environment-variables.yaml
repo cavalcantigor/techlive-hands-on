@@ -1,0 +1,3 @@
+mongodb:
+  host: MONGODB_HOST
+  database: MONGODB_DATABASE

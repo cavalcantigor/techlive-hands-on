@@ -4,18 +4,33 @@
   "description": "Teste para a palestra Tech Live.",
   "main": "index.ts",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "lint": "tslint -c tslint.json -p tsconfig.json"
+    "test": "export NODE_ENV='test'; jest -w 1 --verbose --forceExit --detectOpenHandles -c jest.config.js",
+    "coverage": "export NODE_ENV='test'; jest -w 1 --verbose --forceExit --collectCoverage --coverage --detectOpenHandles -c jest.config.js",
+    "build": "tsc",
+    "lint": "tslint -c tslint.json -p tsconfig.json",
+    "start": "nodemon --watch 'src/' --exec 'ts-node src/index.ts'"
   },
   "author": "Igor Cavalcanti",
   "license": "ISC",
   "dependencies": {
+    "@typegoose/typegoose": "^7.1.3",
     "apollo-server": "^2.14.1",
+    "config": "^3.3.1",
     "express": "^4.17.1",
-    "typescript": "^3.9.3"
+    "mongoose": "^5.9.16",
+    "typescript": "^3.9.3",
+    "winston": "^3.2.1"
   },
   "devDependencies": {
+    "@types/config": "0.0.36",
+    "@types/jest": "^25.2.3",
+    "@types/mongoose": "^5.7.21",
+    "@types/sinon": "^9.0.4",
+    "apollo-server-testing": "^2.14.1",
+    "jest": "^26.0.1",
     "nodemon": "^2.0.4",
+    "sinon": "^9.0.2",
+    "ts-jest": "^26.1.0",
     "ts-node": "^8.10.2",
     "tslint": "^6.1.2"
   }
