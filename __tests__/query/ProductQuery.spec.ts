@@ -2,6 +2,8 @@ import { gql } from 'apollo-server';
 import sinon from 'sinon';
 import { query, server, connectMongo, disconnectMongo } from '../helper/QueryUtil';
 import { Product, ProductModel } from '../../src/models';
+import { ProductProvider } from '../../src/providers';
+import { MongoDataSource } from 'apollo-datasource-mongodb';
 
 
 beforeAll(async () => {
@@ -19,6 +21,7 @@ describe('product query', () => {
         const GET_PRODUCT = gql(`
             query product($id: ID!){
                 getProduct(id: $id) {
+                    id
                     title
                     price {
                         bestPrice
@@ -48,6 +51,7 @@ describe('product query', () => {
                     },
                 });
                 expect(response.data.getProduct).toEqual({
+                    id: idProduct,
                     title: 'Xablau',
                     price: {
                         bestPrice: null,
@@ -55,19 +59,33 @@ describe('product query', () => {
                     }
                 });
             });
+
+            it('should raise an exception', async () => {
+                const response = await query({
+                    query: GET_PRODUCT,
+                    variables: {
+                        id: 'suuuuuuuuuuuuuuuuuuuuuuuuper wrong',
+                    },
+                });
+                expect(response.errors).not.toBeUndefined();
+            });
         });
 
         describe('and fails', () => {
 
             beforeEach(() => {
-                sinon.stub(ProductModel, 'findOne').throwsException('fake exception');
+                sinon.stub(ProductProvider.prototype, 'get').throwsException(new Error('fake exception'));
+            });
+
+            afterEach(() => {
+                sinon.restore();
             });
 
             it('should return an error message', async () => {
                 const response = await query({
                     query: GET_PRODUCT,
                     variables: {
-                        id: '123abc',
+                        id: idProduct,
                     },
                 });
                 expect(response.errors[0].message).toEqual('fake exception');
@@ -112,7 +130,7 @@ describe('product query', () => {
         describe('and fails', () => {
 
             beforeEach(() => {
-                sinon.stub(ProductModel, 'find').throwsException('fake exception');
+                sinon.stub(ProductModel, 'find').throwsException(new Error('fake exception'));
             });
 
             it('should return an error message', async () => {
@@ -169,7 +187,7 @@ describe('product query', () => {
         describe('and fails', () => {
 
             beforeEach(() => {
-                sinon.stub(ProductModel, 'create').throwsException('fake exception');
+                sinon.stub(ProductModel, 'create').throwsException(new Error('fake exception'));
             });
 
             it('should return an error message', async () => {
@@ -297,7 +315,7 @@ describe('product query', () => {
         describe('and fails', () => {
 
             beforeEach(() => {
-                sinon.stub(ProductModel, 'findByIdAndUpdate').throwsException('fake exception');
+                sinon.stub(ProductModel, 'findByIdAndUpdate').throwsException(new Error('fake exception'));
             });
 
             afterEach(() => {

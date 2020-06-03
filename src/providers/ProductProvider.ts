@@ -1,19 +1,20 @@
 import Provider from './IProvider';
 import { Attribute, Product, ProductModel } from '../models';
-import { DataSource } from 'apollo-datasource';
+import { MongoDataSource } from 'apollo-datasource-mongodb';
+import { ObjectID } from 'mongodb';
 
 
-export default class ProductProvider extends DataSource implements Provider {
+export default class ProductProvider extends MongoDataSource<Product> implements Provider {
 
-    public constructor() {
-        super();
+    public constructor(collection: any) {
+        super(collection);
     }
 
     public create(product: Product): Promise<Product> {
         try {
             return ProductModel.create(product);
         } catch (err) {
-            throw new Error(err);
+            throw err;
         }
     }
 
@@ -28,15 +29,17 @@ export default class ProductProvider extends DataSource implements Provider {
             }
             return null;
         } catch (err) {
-            throw new Error(err);
+            throw err;
         }
     }
 
-    public get(id: string): Promise<Product> {
+    public async get(id: string): Promise<Product> {
         try {
-            return ProductModel.findOne({ _id: id }).exec();
+            const objID = new ObjectID(id);
+            const product = await this.findOneById(objID);
+            return Object.assign({}, product, { id });
         } catch (err) {
-            throw new Error(err);
+            throw err;
         }
     }
 
@@ -44,7 +47,7 @@ export default class ProductProvider extends DataSource implements Provider {
         try {
             return ProductModel.find().exec();
         } catch (err) {
-            throw new Error(err);
+            throw err;
         }
     }
 }
